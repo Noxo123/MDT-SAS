@@ -1,5 +1,6 @@
 local agents, dispatches, passages, reports, partners = {}, {}, {}, {}, {}
 local nextDispatchId, nextReportId, nextPassageId = 1, 1, 1
+local lastPassageByAgentPartner = {}
 local dbEnabled = false
 
 local function notify(src, message, kind)
@@ -354,8 +355,17 @@ RegisterNetEvent('mdt-sas:server:validatePassage', function(data)
     if #(coords - vector3(px, py, pz)) > 100.0 then
         notify(src, 'Tu dois être à moins de 100 mètres du partenaire.', 'error'); return
     end
+    local cooldownKey = getIdentifier(src) .. ':' .. partnerId
+    local lastPassage = lastPassageByAgentPartner[cooldownKey] or 0
+    if os.time() - lastPassage < (Config.PassageCooldownSeconds or 300) then
+        notify(src, 'Un passage récent existe déjà pour toi sur ce partenaire. Réessaie plus tard.', 'error')
+        return
+    end
     local evidence = safeString(data.evidence, Config.MaxEvidenceLength)
-    if evidence == '' then notify(src, 'Une référence de preuve photo est obligatoire.', 'error'); return end
+    if evidence == '' or not evidence:match('^https://') then
+        notify(src, 'Une URL HTTPS de preuve photo est obligatoire.', 'error')
+        return
+    end
 
     -- Une URL saisie ne suffit pas à garantir une photo authentique : toute preuve passe en revue superviseur.
     local passageId = nil
@@ -372,6 +382,7 @@ RegisterNetEvent('mdt-sas:server:validatePassage', function(data)
         agent = getName(src), identifier = getIdentifier(src), time = os.date('%H:%M:%S'),
         timestamp = os.time(), day = dayKey(), status = 'pending_review', evidence = evidence,
         x = coords.x, y = coords.y, z = coords.z }
+    lastPassageByAgentPartner[cooldownKey] = os.time()
     notify(src, 'Passage transmis pour validation par un superviseur.', 'success')
     broadcastState()
 end)
@@ -420,6 +431,20 @@ RegisterNetEvent('mdt-sas:server:createReport', function(data)
     notify(src, 'Rapport enregistré.', 'success')
     broadcastState()
 end)
+
+RegisterCommand('mdtcoords', function(src)
+    if src == 0 then
+        print('[mdt-sas] Lance /mdtcoords en jeu par un administrateur pour relever les coordonnées.')
+        return
+    end
+    if not hasAce(src, Config.Ace.admin) then notify(src, 'Permission administrateur requise.', 'error'); return end
+    local ped = GetPlayerPed(src)
+    if not ped or ped == 0 then return end
+    local coords = GetEntityCoords(ped)
+    local line = ('x = %.3f, y = %.3f, z = %.3f'):format(coords.x, coords.y, coords.z)
+    print(('[mdt-sas] Coordonnées de %s : %s'):format(getName(src), line))
+    notify(src, 'Coordonnées envoyées à la console serveur.', 'success')
+end, false)
 
 AddEventHandler('playerDropped', function()
     local src = source
