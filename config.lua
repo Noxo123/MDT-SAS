@@ -19,6 +19,7 @@ Config.MaxReportLength = 4000
 Config.MaxEvidenceLength = 500
 Config.DailyPassageTarget = 4
 Config.PassageValidationDistance = 100.0
+Config.PassageCooldownSeconds = 300
 
 -- Les quotas sont calculés sur la date locale du serveur FXServer.
 -- Configure le fuseau horaire de la machine si tu veux minuit heure française.
