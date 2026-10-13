@@ -3,7 +3,7 @@ game 'gta5'
 
 author 'Noxo123'
 description 'Sentinel Security Agency — MDT portable'
-version '0.1.0'
+version '0.2.0'
 
 lua54 'yes'
 
@@ -19,5 +19,5 @@ files {
     'web/app.js'
 }
 
--- Aucune dépendance de framework obligatoire.
--- oxmysql pourra être ajouté comme dépendance optionnelle lors de l'intégration SQL.
+-- oxmysql est optionnel au démarrage mais requis pour conserver les données.
+-- Si installé, démarre oxmysql avant cette ressource dans server.cfg.
