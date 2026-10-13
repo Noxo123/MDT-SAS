@@ -52,9 +52,10 @@ Les permissions sont contrôlées côté serveur. Les boutons de l'interface ne 
 
 ## Carte opérationnelle GPS
 
-- Les agents en service et les partenaires configurés apparaissent sur une grille tactique calculée depuis leurs coordonnées FiveM.
-- Les positions des agents sont actualisées périodiquement par le serveur ; les marqueurs peuvent être sélectionnés pour placer un waypoint.
-- La carte propose zoom et recentrage. Le fond cartographique GTA officiel n'est pas inclus dans cette version.
+- La carte utilise des tuiles cartographiques GTA V (Atlas, Satellite et Grille) avec zoom et déplacement Leaflet.
+- Les positions X/Y/Z FiveM sont converties en points de carte ; les agents et partenaires ont des marqueurs distincts avec infobulles.
+- Cliquer sur un marqueur place un waypoint en jeu. Les positions des agents sont actualisées périodiquement par le serveur.
+- Les tuiles sont hébergées sur GitHub Pages par le projet communautaire `VIRUXE/gtav-map-tiles`, et la bibliothèque Leaflet ainsi que l'accès aux tuiles nécessitent un accès Internet côté client.
 ## Persistance et quotas
 
 - Les tables sont définies dans `sql/install.sql`.
