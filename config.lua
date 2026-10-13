@@ -5,7 +5,7 @@ Config.Command = 'sentinel'
 Config.DefaultKey = 'F6'
 Config.OpenToEveryone = false
 
--- ACE : les contrôles d'accès sont effectués côté serveur.
+-- Permissions ACE : configure les groupes dans server.cfg.
 Config.Ace = {
     use = 'mdt.sas.use',
     dispatch = 'mdt.sas.dispatch',
@@ -13,40 +13,29 @@ Config.Ace = {
     admin = 'mdt.sas.admin'
 }
 
--- Suivi GPS. UnOneSync est recommandé pour lire les positions côté serveur.
 Config.PositionUpdateSeconds = 10
-Config.MaxPositionDistance = 5000.0
 Config.MaxDispatchTitleLength = 90
 Config.MaxReportLength = 4000
 Config.MaxEvidenceLength = 500
 Config.DailyPassageTarget = 4
+Config.PassageValidationDistance = 100.0
 
--- Heure de référence : heure locale du processus serveur.
--- Pour une remise à zéro à minuit en France, configure le fuseau horaire de l'hôte correctement.
-Config.ResetDailyPassages = true
+-- Les quotas sont calculés sur la date locale du serveur FXServer.
+-- Configure le fuseau horaire de la machine si tu veux minuit heure française.
 
--- Remplace les exemples par les véritables entreprises partenaires.
+-- Les coordonnées sont celles du monde GTA (vector3). Renseigne x, y et z
+-- pour CHAQUE partenaire ; sinon les validations sont bloquées par sécurité.
 Config.Partners = {
     {
         id = 'dynastie',
         name = 'Dynastie',
-        address = 'Adresse à renseigner en jeu',
+        address = 'Adresse RP à renseigner',
+        x = nil, y = nil, z = nil,
         target = 4,
         notes = 'Consignes de sécurité à renseigner.'
     }
 }
 
--- Option de filtrage par métier. La base initiale utilise les permissions ACE ;
--- branche ici un adaptateur ESX/QBCore/Qbox si tu veux vérifier le métier automatiquement.
-Config.Job = {
-    enabled = false,
-    name = 'sentinel'
-}
-
-Config.Statuses = {
-    available = 'Disponible',
-    enroute = 'En route',
-    onsite = 'Sur place',
-    securing = 'Sécurisation',
-    unavailable = 'Indisponible'
-}
+-- Base indépendante de framework. Les droits sont vérifiés via ACE.
+-- Une intégration métier ESX/QBCore/Qbox pourra compléter les permissions ACE.
+Config.Job = { enabled = false, name = 'sentinel' }
