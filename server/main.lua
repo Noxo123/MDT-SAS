@@ -172,12 +172,13 @@ local function loadDatabase()
             for _, configured in ipairs(Config.Partners) do
                 sql([[
                     INSERT INTO mdt_sas_partners (id, name, address, x, y, z, daily_target, notes, active)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)
+                    VALUES (?, ?, ?, NULLIF(?, 0), NULLIF(?, 0), NULLIF(?, 0), ?, ?, 1)
                     ON DUPLICATE KEY UPDATE name = VALUES(name), address = VALUES(address),
                     x = VALUES(x), y = VALUES(y), z = VALUES(z), daily_target = VALUES(daily_target),
                     notes = VALUES(notes), active = 1
-                ]], { configured.id, configured.name, configured.address or '', configured.x, configured.y, configured.z,
-                    configured.target or Config.DailyPassageTarget, configured.notes or '' }, 'insert')
+                ]], { configured.id, configured.name, configured.address or '', configured.x or 0,
+                    configured.y or 0, configured.z or 0, configured.target or Config.DailyPassageTarget,
+                    configured.notes or '' }, 'insert')
             end
             local partnerRows = sql('SELECT * FROM mdt_sas_partners WHERE active = 1', {}, 'query') or {}
             for _, p in ipairs(partnerRows) do
@@ -279,7 +280,7 @@ RegisterNetEvent('mdt-sas:server:createDispatch', function(data)
     local id
     if dbEnabled then
         id = sql('INSERT INTO mdt_sas_dispatches (title, description, partner_id, status, created_by) VALUES (?, ?, ?, \'open\', ?)',
-            { title, description, partnerId ~= '' and partnerId or nil, getName(src) }, 'insert')
+            { title, description, partnerId, getName(src) }, 'insert')
     end
     id = tostring(id or nextDispatchId)
     nextDispatchId = math.max(nextDispatchId, (tonumber(id) or 0) + 1)
