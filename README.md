@@ -42,16 +42,19 @@ Les permissions sont contrôlées côté serveur. Les boutons de l'interface ne 
 - `/mdtcoords` (permission `mdt.sas.admin`) : relève les coordonnées du personnage et les écrit dans la console serveur. Utilise-les pour configurer les partenaires.
 - Les passages sont limités par un délai anti-double-clic configurable.
 
-## Passages et preuves photo
+## Passages GPS
 
 1. Configurer les coordonnées du partenaire dans `config.lua`.
 2. L'agent doit être en service et se trouver à moins de `Config.PassageValidationDistance` mètres du partenaire.
-3. Le formulaire demande une URL HTTPS de preuve photo hébergée par un service approuvé.
+3. Au clic sur « Enregistrer ma position », le serveur relève les coordonnées X/Y/Z du personnage à cet instant précis.
 4. Le passage reste en statut `pending_review` et ne compte **pas** dans le quota tant qu'un superviseur ne l'a pas validé.
-5. Une preuve URL ne garantit pas à elle seule l'authenticité de l'image. En production, branche une ressource de capture qui génère des références signées ou vérifiables, puis restreins les domaines acceptés.
+5. Aucune photo, capture d'écran, URL de preuve ou téléversement n'est utilisé.
 
-La capture photo automatique n'est pas intégrée dans cette base : elle dépend de la ressource de capture et du service de stockage choisis par le serveur.
+## Carte opérationnelle GPS
 
+- Les agents en service et les partenaires configurés apparaissent sur une grille tactique calculée depuis leurs coordonnées FiveM.
+- Les positions des agents sont actualisées périodiquement par le serveur ; les marqueurs peuvent être sélectionnés pour placer un waypoint.
+- La carte propose zoom et recentrage. Le fond cartographique GTA officiel n'est pas inclus dans cette version.
 ## Persistance et quotas
 
 - Les tables sont définies dans `sql/install.sql`.
@@ -62,9 +65,8 @@ La capture photo automatique n'est pas intégrée dans cette base : elle dépend
 
 ## Limites connues de cette version
 
-- Le suivi GPS montre les coordonnées serveur et permet de placer un waypoint ; ce n'est pas encore une carte de flotte intégrée avec icônes animées.
 - L'authentification de métier/grade ESX/QBCore/Qbox n'est pas encore branchée ; les droits s'appuient sur ACE.
-- Le système de photo automatique et l'envoi vers Discord ne sont pas encore intégrés.
+- L'envoi vers Discord n'est pas encore intégré.
 - Teste les migrations, droits ACE, redémarrages, reconnexions et passages répétés sur un serveur de test avant la mise en production.
 
 ## Arborescence
