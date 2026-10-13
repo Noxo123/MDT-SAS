@@ -361,29 +361,22 @@ RegisterNetEvent('mdt-sas:server:validatePassage', function(data)
         notify(src, 'Un passage récent existe déjà pour toi sur ce partenaire. Réessaie plus tard.', 'error')
         return
     end
-    local evidence = safeString(data.evidence, Config.MaxEvidenceLength)
-    if evidence == '' or not evidence:match('^https://') then
-        notify(src, 'Une URL HTTPS de preuve photo est obligatoire.', 'error')
-        return
-    end
-
-    -- Une URL saisie ne suffit pas à garantir une photo authentique : toute preuve passe en revue superviseur.
     local passageId = nil
     if dbEnabled then
         passageId = sql([[
             INSERT INTO mdt_sas_passages
-              (partner_id, agent_identifier, agent_name, status, evidence_reference, x, y, z, passage_day)
-            VALUES (?, ?, ?, 'pending_review', ?, ?, ?, ?, ?)
-        ]], { partnerId, getIdentifier(src), getName(src), evidence, coords.x, coords.y, coords.z, dayKey() }, 'insert')
+              (partner_id, agent_identifier, agent_name, status, x, y, z, passage_day)
+            VALUES (?, ?, ?, 'pending_review', ?, ?, ?, ?)
+        ]], { partnerId, getIdentifier(src), getName(src), coords.x, coords.y, coords.z, dayKey() }, 'insert')
     end
     passageId = tostring(passageId or nextPassageId)
     nextPassageId = math.max(nextPassageId, (tonumber(passageId) or 0) + 1)
     passages[#passages + 1] = { id = passageId, partnerId = partnerId, partnerName = partner.name,
         agent = getName(src), identifier = getIdentifier(src), time = os.date('%H:%M:%S'),
-        timestamp = os.time(), day = dayKey(), status = 'pending_review', evidence = evidence,
+        timestamp = os.time(), day = dayKey(), status = 'pending_review',
         x = coords.x, y = coords.y, z = coords.z }
     lastPassageByAgentPartner[cooldownKey] = os.time()
-    notify(src, 'Passage transmis pour validation par un superviseur.', 'success')
+    notify(src, 'Position GPS enregistrée au moment du clic. Passage transmis pour validation.', 'success')
     broadcastState()
 end)
 
