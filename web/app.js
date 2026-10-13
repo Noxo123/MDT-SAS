@@ -34,7 +34,7 @@
     $('#stat-dispatch').textContent = state.dispatches.filter((d) => !['completed', 'cancelled'].includes(d.status)).length;
     $('#stat-agents').textContent = state.agents.length;
     $('#stat-partners').textContent = state.partners.length;
-    $('#stat-passages').textContent = state.passages.filter((p) => p.day === new Date().toISOString().slice(0, 10) && p.status === 'validated').length;
+    $('#stat-passages').textContent = state.passages.filter((p) => p.day === state.today && p.status === 'validated').length;
     $('#dispatch-count').textContent = state.dispatches.filter((d) => d.status === 'open').length;
     $('#server-time').textContent = state.serverTime ? `Synchronisé : ${state.serverTime}` : 'Synchronisation active';
     const partnerSelect = $('#dispatch-partner');
@@ -46,10 +46,10 @@
     $('#dispatch-list').innerHTML = state.dispatches.length ? state.dispatches.map((d) => dispatchMarkup(d)).join('') : empty('Aucun dispatch enregistré.');
     $('#partner-list').innerHTML = state.partners.length ? state.partners.map((p) => {
       const pct = Math.min(100, Math.round((p.count / Math.max(1, p.target)) * 100));
-      return `<article class="partner-card"><div class="card-top"><div><h3>${escapeHtml(p.name)}</h3><div class="muted">${escapeHtml(p.address || 'Adresse non renseignée')}</div></div><span class="tag">${p.count}/${p.target} passages</span></div><div class="progress"><span style="width:${pct}%"></span></div><div class="muted">${escapeHtml(p.notes || 'Aucune consigne enregistrée.')}</div><div class="card-actions"><button class="button button-primary button-small" data-passage="${escapeHtml(p.id)}">Valider mon passage</button><button class="button button-secondary button-small" data-dispatch-partner="${escapeHtml(p.id)}">Créer un dispatch</button></div><p class="hint">La validation nécessite des coordonnées configurées côté serveur et une référence de preuve photo.</p></article>`;
+      return `<article class="partner-card"><div class="card-top"><div><h3>${escapeHtml(p.name)}</h3><div class="muted">${escapeHtml(p.address || 'Adresse non renseignée')}</div></div><span class="tag">${p.count}/${p.target} passages</span></div><div class="progress"><span style="width:${pct}%"></span></div><div class="muted">${escapeHtml(p.notes || 'Aucune consigne enregistrée.')}</div><div class="card-actions"><button class="button button-primary button-small" data-passage="${escapeHtml(p.id)}">Soumettre un passage</button><button class="button button-secondary button-small" data-dispatch-partner="${escapeHtml(p.id)}">Créer un dispatch</button>${p.x != null && p.y != null ? `<button class="button button-secondary button-small" data-waypoint-x="${Number(p.x)}" data-waypoint-y="${Number(p.y)}">GPS partenaire</button>` : ''}</div><p class="hint">Les passages restent en attente jusqu'à la validation d'un superviseur. Configure les coordonnées et un système photo fiable.</p></article>`;
     }).join('') : empty('Aucun partenaire configuré dans config.lua.');
-    $('#passage-list').innerHTML = state.passages.length ? `<table class="data-table"><thead><tr><th>Heure</th><th>Partenaire</th><th>Agent</th><th>Statut</th><th>Preuve</th></tr></thead><tbody>${state.passages.map((p) => `<tr><td>${escapeHtml(p.time || '')}</td><td>${escapeHtml(p.partnerName || p.partnerId)}</td><td>${escapeHtml(p.agent)}</td><td>${escapeHtml(moneylessStatus(p.status))}</td><td>${p.evidence ? `<a href="${escapeHtml(p.evidence)}" target="_blank" rel="noopener noreferrer">Consulter</a>` : '—'}</td></tr>`).join('')}</tbody></table>` : '<div class="panel muted">Aucun passage enregistré.</div>';
-    const agentMarkup = (a) => `<article class="agent-card"><div class="card-top"><div><h3>${escapeHtml(a.name)}</h3><div class="muted">ID serveur : ${escapeHtml(a.source)}</div></div><span class="tag green">${escapeHtml(moneylessStatus(a.status))}</span></div><p class="muted">${a.x == null ? 'Coordonnées indisponibles' : `X ${Number(a.x).toFixed(1)} · Y ${Number(a.y).toFixed(1)} · Z ${Number(a.z).toFixed(1)}`}</p></article>`;
+    $('#passage-list').innerHTML = state.passages.length ? `<table class="data-table"><thead><tr><th>Heure</th><th>Partenaire</th><th>Agent</th><th>Statut</th><th>Preuve</th><th>Action</th></tr></thead><tbody>${state.passages.map((p) => { const safeEvidence = /^https?:\/\//i.test(String(p.evidence || '')); return `<tr><td>${escapeHtml(p.time || '')}</td><td>${escapeHtml(p.partnerName || p.partnerId)}</td><td>${escapeHtml(p.agent)}</td><td>${escapeHtml(moneylessStatus(p.status))}</td><td>${safeEvidence ? `<a href="${escapeHtml(p.evidence)}" target="_blank" rel="noopener noreferrer">Consulter</a>` : '—'}</td><td>${p.status === 'pending_review' && state.me.permissions.supervisor ? `<button class="button button-primary button-small" data-review-id="${escapeHtml(p.id)}" data-review-decision="validated">Valider</button> <button class="button button-secondary button-small" data-review-id="${escapeHtml(p.id)}" data-review-decision="rejected">Refuser</button>` : '—'}</td></tr>`; }).join('')}</tbody></table>` : '<div class="panel muted">Aucun passage enregistré.</div>';
+    const agentMarkup = (a) => `<article class="agent-card"><div class="card-top"><div><h3>${escapeHtml(a.name)}</h3><div class="muted">ID serveur : ${escapeHtml(a.source)}</div></div><span class="tag green">${escapeHtml(moneylessStatus(a.status))}</span></div><p class="muted">${a.x == null ? 'Coordonnées indisponibles' : `X ${Number(a.x).toFixed(1)} · Y ${Number(a.y).toFixed(1)} · Z ${Number(a.z).toFixed(1)}`}</p>${a.x != null && a.y != null ? `<div class="card-actions"><button class="button button-secondary button-small" data-waypoint-x="${Number(a.x)}" data-waypoint-y="${Number(a.y)}">Placer le GPS</button></div>` : ''}</article>`;
     $('#dashboard-agents').innerHTML = state.agents.length ? state.agents.slice(0, 4).map((a) => `<div class="list-row"><div class="mini-icon">◎</div><div class="grow"><strong>${escapeHtml(a.name)}</strong><small>${escapeHtml(moneylessStatus(a.status))}</small></div></div>`).join('') : empty('Aucun agent en service.');
     $('#agent-list').innerHTML = state.agents.length ? state.agents.map(agentMarkup).join('') : empty('Aucun agent en service.');
     $('#report-list').innerHTML = state.reports.length ? state.reports.map((r) => `<article class="report-card"><div class="card-top"><h3>${escapeHtml(r.title)}</h3><span class="tag">${escapeHtml(r.createdAt || '')}</span></div><p class="muted">${escapeHtml(r.body)}</p><div class="muted">Rédigé par ${escapeHtml(r.author)}</div></article>`).join('') : empty('Aucun rapport.');
@@ -79,11 +79,18 @@
     const complete = event.target.closest('[data-complete]');
     const passage = event.target.closest('[data-passage]');
     const dispatchPartner = event.target.closest('[data-dispatch-partner]');
+    const review = event.target.closest('[data-review-id]');
+    const waypoint = event.target.closest('[data-waypoint-x]');
     if (take) await post('takeDispatch', { id: take.dataset.take });
     if (complete) await post('updateDispatchStatus', { id: complete.dataset.complete, status: 'completed' });
     if (passage) {
       const evidence = window.prompt('Référence/URL de la preuve photo approuvée (laisser vide pour mise en attente) :') || '';
       await post('validatePassage', { partnerId: passage.dataset.passage, evidence });
+    }
+    if (review) await post('reviewPassage', { id: review.dataset.reviewId, decision: review.dataset.reviewDecision });
+    if (waypoint) {
+      const result = await post('setWaypoint', { x: Number(waypoint.dataset.waypointX), y: Number(waypoint.dataset.waypointY) });
+      if (result && result.ok) toast('Point GPS placé sur la carte.', 'success');
     }
     if (dispatchPartner) {
       go('dispatch');
