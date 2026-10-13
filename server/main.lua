@@ -209,7 +209,7 @@ local function loadDatabase()
             for _, p in ipairs(passageRows) do
                 passages[#passages + 1] = { id = tostring(p.id), partnerId = p.partner_id,
                     partnerName = p.partner_name or p.partner_id, agent = p.agent_name, identifier = p.agent_identifier,
-                    status = p.status, evidence = p.evidence_reference or '', day = p.day_string or tostring(p.passage_day),
+                    status = p.status, day = p.day_string or tostring(p.passage_day),
                     time = p.time_string or '', timestamp = 0, x = p.x, y = p.y, z = p.z }
                 nextPassageId = math.max(nextPassageId, (tonumber(p.id) or 0) + 1)
             end
