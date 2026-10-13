@@ -1,6 +1,10 @@
 (() => {
   'use strict';
   const $ = (selector) => document.querySelector(selector);
+  let gtaMap = null;
+  let agentLayer = null;
+  let partnerLayer = null;
+  let gtaMapStyle = 'atlas';
   const state = { me: { name: 'Agent', onDuty: false, status: 'unavailable', permissions: {} }, partners: [], dispatches: [], passages: [], reports: [], agents: [] };
   const pageNames = { dashboard: 'Vue générale', dispatch: 'Dispatch opérationnel', partners: 'Entreprises partenaires', passages: 'Registre des passages', agents: 'Agents GPS', reports: 'Rapports d’intervention' };
   const statusNames = { open: 'Disponible', enroute: 'En route', onsite: 'Sur place', securing: 'Sécurisation', completed: 'Terminé', cancelled: 'Annulé', available: 'Disponible', unavailable: 'Hors service', validated: 'Validé', pending_review: 'À valider', rejected: 'Refusé' };
@@ -56,34 +60,105 @@
     $('#report-list').innerHTML = state.reports.length ? state.reports.map((r) => `<article class="report-card"><div class="card-top"><h3>${escapeHtml(r.title)}</h3><span class="tag">${escapeHtml(r.createdAt || '')}</span></div><p class="muted">${escapeHtml(r.body)}</p><div class="muted">Rédigé par ${escapeHtml(r.author)}</div></article>`).join('') : empty('Aucun rapport.');
   };
 
-  function renderMap() {
+  const GTA_WORLD = { minX: -4140, maxX: 4860, minY: -5100, maxY: 8400 };
+  const gtaToMap = (x, y) => [
+    256 * (Number(y) - GTA_WORLD.minY) / (GTA_WORLD.maxY - GTA_WORLD.minY),
+    256 * (Number(x) - GTA_WORLD.minX) / (GTA_WORLD.maxX - GTA_WORLD.minX)
+  ];
+  const mapIcon = (kind) => L.divIcon({
+    className: 'gta-map-icon-wrap',
+    html: '<span class="gta-map-icon ' + kind + '"><i></i></span>',
+    iconSize: [22, 22], iconAnchor: [11, 11]
+  });
+  function ensureGtaMap() {
     const host = $('#ops-map');
-    if (!host) return;
+    if (!host) return false;
+    if (!window.L) {
+      host.innerHTML = '<div class="map-empty">La bibliothèque de carte n’a pas pu se charger. Vérifie l’accès Internet du client FiveM.</div>';
+      return false;
+    }
+    if (gtaMap) return true;
+    host.innerHTML = '';
+    gtaMap = L.map(host, {
+      crs: L.CRS.Simple,
+      minZoom: -1,
+      maxZoom: 5,
+      zoomControl: true,
+      attributionControl: false,
+      preferCanvas: true,
+      maxBoundsViscosity: 0.6
+    });
+    const bounds = L.latLngBounds([0, 0], [256, 256]);
+    const tileBase = 'https://viruxe.github.io/gtav-map-tiles/';
+    gtaMap.tileLayer = L.tileLayer(tileBase + gtaMapStyle + '/{z}/{x}-{y}.webp', {
+      minZoom: 0, maxZoom: 5, noWrap: true, bounds, keepBuffer: 3,
+      errorTileUrl: ''
+    }).addTo(gtaMap);
+    gtaMap.setMaxBounds(bounds.pad(0.08));
+    gtaMap.fitBounds(bounds);
+    agentLayer = L.layerGroup().addTo(gtaMap);
+    partnerLayer = L.layerGroup().addTo(gtaMap);
+    gtaMap.on('click', () => {});
+    return true;
+  }
+  function setMapStyle(style) {
+    if (!['atlas', 'satelite', 'grid'].includes(style)) return;
+    gtaMapStyle = style;
+    document.querySelectorAll('[data-map-style]').forEach(button => button.classList.toggle('active', button.dataset.mapStyle === style));
+    if (gtaMap && gtaMap.tileLayer) {
+      gtaMap.removeLayer(gtaMap.tileLayer);
+      gtaMap.tileLayer = L.tileLayer('https://viruxe.github.io/gtav-map-tiles/' + style + '/{z}/{x}-{y}.webp', {
+        minZoom: 0, maxZoom: 5, noWrap: true, keepBuffer: 3
+      }).addTo(gtaMap);
+      gtaMap.tileLayer.bringToBack();
+    }
+  }
+  function renderMap() {
+    if (!ensureGtaMap()) return;
     const agents = state.agents.filter(a => a.x != null && a.y != null && Number.isFinite(Number(a.x)) && Number.isFinite(Number(a.y)));
     const partners = state.partners.filter(p => p.x != null && p.y != null && Number.isFinite(Number(p.x)) && Number.isFinite(Number(p.y)));
     $('#map-agent-count').textContent = agents.length;
     $('#map-partner-count').textContent = partners.length;
-    $('#map-updated').textContent = state.serverTime ? 'Serveur : ' + state.serverTime : 'Positions en direct';
-    const all = agents.map(a => ({x:Number(a.x),y:Number(a.y)})).concat(partners.map(p => ({x:Number(p.x),y:Number(p.y)})));
-    if (!all.length) { host.innerHTML = '<div class="map-empty">Aucune coordonnée disponible. Configure les partenaires et mets des agents en service.</div>'; return; }
-    const minX=Math.min(...all.map(p=>p.x)), maxX=Math.max(...all.map(p=>p.x)), minY=Math.min(...all.map(p=>p.y)), maxY=Math.max(...all.map(p=>p.y));
-    const spanX=Math.max(250,maxX-minX), spanY=Math.max(250,maxY-minY);
-    const zoom=state.mapZoom||1, fitScale=Math.min(1000/(spanX*1.4),600/(spanY*1.4));
-    const width=1000/fitScale/zoom, height=600/fitScale/zoom;
-    const cx=state.mapCenter ? state.mapCenter.x : (minX+maxX)/2;
-    const cy=state.mapCenter ? state.mapCenter.y : (minY+maxY)/2;
-    const vl=cx-width/2, vt=-(cy+height/2);
-    const project=(x,y)=>({x:(x-vl)/width*1000,y:(-y-vt)/height*600});
-    const markers=[];
-    partners.forEach(p=>{const q=project(Number(p.x),Number(p.y));markers.push('<g class="map-marker" tabindex="0" role="button" aria-label="Waypoint partenaire" data-map-x="'+Number(p.x)+'" data-map-y="'+Number(p.y)+'"><circle cx="'+q.x+'" cy="'+q.y+'" r="11" fill="#55d8a4" fill-opacity=".18"/><circle cx="'+q.x+'" cy="'+q.y+'" r="5" fill="#55d8a4" stroke="#0b1017" stroke-width="2"/><text x="'+(q.x+12)+'" y="'+(q.y-8)+'">'+escapeHtml(p.name)+'</text><text class="marker-label" x="'+(q.x+12)+'" y="'+(q.y+9)+'">PARTENAIRE</text></g>');});
-    agents.forEach(a=>{const q=project(Number(a.x),Number(a.y));markers.push('<g class="map-marker" tabindex="0" role="button" aria-label="Waypoint agent" data-map-x="'+Number(a.x)+'" data-map-y="'+Number(a.y)+'"><circle cx="'+q.x+'" cy="'+q.y+'" r="14" fill="#ff626c" fill-opacity=".17"/><circle cx="'+q.x+'" cy="'+q.y+'" r="6" fill="#ff626c" stroke="#0b1017" stroke-width="2"/><text x="'+(q.x+14)+'" y="'+(q.y-9)+'">'+escapeHtml(a.name)+'</text><text class="marker-label" x="'+(q.x+14)+'" y="'+(q.y+9)+'">'+escapeHtml(moneylessStatus(a.status))+' · ID '+escapeHtml(a.source)+'</text></g>');});
-    let grid=''; for(let i=0;i<=10;i++) grid+='<path d="M '+(i*100)+' 0 V 600 M 0 '+(i*60)+' H 1000" stroke="#344254" stroke-opacity=".5" stroke-width="1"/>';
-    host.innerHTML='<svg viewBox="0 0 1000 600" preserveAspectRatio="xMidYMid meet" aria-label="Carte tactique GPS"><rect width="1000" height="600" fill="#0b1119"/>'+grid+markers.join('')+'</svg>';
-    host.querySelectorAll('[data-map-x]').forEach(el=>{const action=()=>{const x=Number(el.dataset.mapX),y=Number(el.dataset.mapY);state.mapCenter={x:x,y:y};renderMap();post('setWaypoint',{x:x,y:y}).then(r=>{if(r&&r.ok)toast('Waypoint placé.','success');});};el.addEventListener('click',action);el.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();action();}});});
+    $('#map-updated').textContent = state.serverTime ? 'Synchronisé : ' + state.serverTime : 'Positions actualisées par le serveur';
+    agentLayer.clearLayers();
+    partnerLayer.clearLayers();
+    const allBounds = [];
+    partners.forEach(p => {
+      const point = gtaToMap(p.x, p.y);
+      const marker = L.marker(point, { icon: mapIcon('partner'), title: p.name || 'Partenaire', keyboard: true });
+      marker.bindTooltip('<strong>' + escapeHtml(p.name || p.id || 'Partenaire') + '</strong><br>PARTENAIRE<br>X ' + Number(p.x).toFixed(1) + ' · Y ' + Number(p.y).toFixed(1), { direction: 'top', offset: [0, -8] });
+      marker.on('click', () => {
+        post('setWaypoint', { x: Number(p.x), y: Number(p.y) }).then(result => {
+          if (result && result.ok) toast('Waypoint partenaire placé.', 'success');
+        });
+      });
+      marker.addTo(partnerLayer);
+      allBounds.push(point);
+    });
+    agents.forEach(a => {
+      const point = gtaToMap(a.x, a.y);
+      const marker = L.marker(point, { icon: mapIcon('agent'), title: a.name || 'Agent', keyboard: true });
+      marker.bindTooltip('<strong>' + escapeHtml(a.name || 'Agent') + '</strong><br>' + escapeHtml(moneylessStatus(a.status)) + '<br>X ' + Number(a.x).toFixed(1) + ' · Y ' + Number(a.y).toFixed(1) + ' · Z ' + Number(a.z || 0).toFixed(1), { direction: 'top', offset: [0, -8] });
+      marker.on('click', () => {
+        post('setWaypoint', { x: Number(a.x), y: Number(a.y) }).then(result => {
+          if (result && result.ok) toast('Waypoint de l’agent placé.', 'success');
+        });
+      });
+      marker.addTo(agentLayer);
+      allBounds.push(point);
+    });
+    if (!allBounds.length) $('#map-updated').textContent = 'En attente des positions des agents';
+    if (gtaMap) requestAnimationFrame(() => gtaMap.invalidateSize({ pan: false }));
   }
-  $('#map-zoom-in').addEventListener('click',()=>{state.mapZoom=Math.min(4,(state.mapZoom||1)*1.35);renderMap();});
-  $('#map-zoom-out').addEventListener('click',()=>{state.mapZoom=Math.max(.5,(state.mapZoom||1)/1.35);renderMap();});
-  $('#map-fit').addEventListener('click',()=>{state.mapZoom=1;state.mapCenter=null;renderMap();});
+  $('#map-fit').addEventListener('click', () => {
+    if (!ensureGtaMap()) return;
+    const points = [];
+    state.agents.filter(a => a.x != null && a.y != null).forEach(a => points.push(gtaToMap(a.x, a.y)));
+    state.partners.filter(p => p.x != null && p.y != null).forEach(p => points.push(gtaToMap(p.x, p.y)));
+    if (points.length) gtaMap.fitBounds(L.latLngBounds(points).pad(0.25));
+    else gtaMap.fitBounds([[0, 0], [256, 256]]);
+  });
+  document.querySelectorAll('[data-map-style]').forEach(button => button.addEventListener('click', () => setMapStyle(button.dataset.mapStyle)));
 
   document.querySelectorAll('.nav-item').forEach((button) => button.addEventListener('click', () => go(button.dataset.page)));
   document.querySelectorAll('[data-goto]').forEach((button) => button.addEventListener('click', () => go(button.dataset.goto)));
