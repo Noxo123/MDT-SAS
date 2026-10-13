@@ -280,7 +280,7 @@ RegisterNetEvent('mdt-sas:server:createDispatch', function(data)
 
     local id
     if dbEnabled then
-        id = sql('INSERT INTO mdt_sas_dispatches (title, description, partner_id, status, created_by) VALUES (?, ?, ?, \'open\', ?)',
+        id = sql('INSERT INTO mdt_sas_dispatches (title, description, partner_id, status, created_by) VALUES (?, ?, NULLIF(?, ''), \'open\', ?)',
             { title, description, partnerId, getName(src) }, 'insert')
     end
     id = tostring(id or nextDispatchId)
