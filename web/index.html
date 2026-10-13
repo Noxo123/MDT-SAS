@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>Sentinel MDT</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main id="app" class="app is-hidden">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-mark">S</div>
+        <div><strong>SENTINEL</strong><span>SECURITY AGENCY</span></div>
+      </div>
+      <div class="side-label">OPÉRATIONS</div>
+      <nav id="navigation">
+        <button class="nav-item active" data-page="dashboard"><span>▦</span>Vue générale</button>
+        <button class="nav-item" data-page="dispatch"><span>⌁</span>Dispatch <i id="dispatch-count">0</i></button>
+        <button class="nav-item" data-page="partners"><span>⌂</span>Partenaires</button>
+        <button class="nav-item" data-page="passages"><span>✓</span>Passages</button>
+        <button class="nav-item" data-page="agents"><span>◎</span>Agents GPS</button>
+        <button class="nav-item" data-page="reports"><span>▤</span>Rapports</button>
+      </nav>
+      <div class="sidebar-bottom">
+        <div class="connection"><span class="pulse"></span> Système opérationnel</div>
+        <button id="close-btn" class="close-button">Fermer la tablette <kbd>ESC</kbd></button>
+      </div>
+    </aside>
+    <section class="workspace">
+      <header class="topbar">
+        <div><span class="eyebrow">SENTINEL OPERATIONS</span><h1 id="page-title">Vue générale</h1></div>
+        <div class="top-actions"><span id="clock">--:--:--</span><button id="duty-btn" class="button button-primary">Prendre mon service</button><div class="avatar" id="avatar">SA</div></div>
+      </header>
+      <div id="toast-region" class="toast-region" aria-live="polite"></div>
+      <section id="page-dashboard" class="page active">
+        <div class="welcome"><div><span class="eyebrow">CENTRE DE COMMANDEMENT</span><h2>Bonjour, <span id="agent-name">Agent</span>.</h2><p>Voici la situation opérationnelle de la Sentinel Security Agency.</p></div><div class="status-pill"><span class="pulse"></span><span id="duty-label">Hors service</span></div></div>
+        <div class="stat-grid">
+          <article class="stat-card"><span>DISPATCH OUVERTS</span><strong id="stat-dispatch">0</strong><small>À traiter ou en cours</small></article>
+          <article class="stat-card"><span>AGENTS EN SERVICE</span><strong id="stat-agents">0</strong><small>Positions disponibles</small></article>
+          <article class="stat-card"><span>PARTENAIRES</span><strong id="stat-partners">0</strong><small>Entreprises référencées</small></article>
+          <article class="stat-card"><span>PASSAGES DU JOUR</span><strong id="stat-passages">0</strong><small>Validés aujourd'hui</small></article>
+        </div>
+        <div class="content-grid"><article class="panel"><div class="panel-heading"><div><span class="eyebrow">PRIORITÉS</span><h3>Dispatch récents</h3></div><button class="text-button" data-goto="dispatch">Tout afficher →</button></div><div id="dashboard-dispatches" class="item-list empty">Aucun dispatch.</div></article><article class="panel"><div class="panel-heading"><div><span class="eyebrow">SURVEILLANCE</span><h3>Agents en service</h3></div><button class="text-button" data-goto="agents">Voir GPS →</button></div><div id="dashboard-agents" class="item-list empty">Aucun agent en service.</div></article></div>
+      </section>
+      <section id="page-dispatch" class="page">
+        <div class="page-intro"><div><h2>Dispatch opérationnel</h2><p>Créer, prendre et suivre les missions de sécurité.</p></div></div>
+        <form id="dispatch-form" class="panel form-grid"><label>Titre de mission<input id="dispatch-title" maxlength="90" required placeholder="Ex. Sécurisation Dynastie"></label><label>Partenaire<select id="dispatch-partner"><option value="">Aucun partenaire associé</option></select></label><label class="span-2">Consignes<textarea id="dispatch-description" maxlength="1000" rows="2" placeholder="Instructions et points de vigilance..."></textarea></label><div class="span-2 form-actions"><button class="button button-primary" type="submit">+ Créer un dispatch</button></div></form>
+        <div id="dispatch-list" class="card-list"></div>
+      </section>
+      <section id="page-partners" class="page"><div class="page-intro"><div><h2>Entreprises partenaires</h2><p>Consignes, adresses et objectifs de passages quotidiens.</p></div></div><div id="partner-list" class="card-list"></div></section>
+      <section id="page-passages" class="page"><div class="page-intro"><div><h2>Registre des passages</h2><p>Historique des contrôles et références des preuves.</p></div></div><div id="passage-list" class="panel table-wrap"></div></section>
+      <section id="page-agents" class="page"><div class="page-intro"><div><h2>Agents GPS</h2><p>Positions issues du serveur FiveM. Les agents doivent être en service.</p></div></div><div id="agent-list" class="card-list"></div><p class="hint">Cette version affiche les coordonnées et statuts. Une carte interactive nécessite l'ajout d'un composant cartographique adapté.</p></section>
+      <section id="page-reports" class="page"><div class="page-intro"><div><h2>Rapports d'intervention</h2><p>Consigner les événements et assurer la traçabilité opérationnelle.</p></div></div><form id="report-form" class="panel form-grid"><label class="span-2">Titre du rapport<input id="report-title" maxlength="120" required placeholder="Objet du rapport"></label><label class="span-2">Compte rendu<textarea id="report-body" maxlength="4000" rows="5" required placeholder="Déroulement, agents présents, observations..."></textarea></label><div class="span-2 form-actions"><button class="button button-primary" type="submit">Enregistrer le rapport</button></div></form><div id="report-list" class="card-list"></div></section>
+      <footer class="footer"><span>SENTINEL MDT <b>v0.1.0</b></span><span id="server-time">En attente de synchronisation</span></footer>
+    </section>
+  </main>
+  <script src="app.js"></script>
+</body>
+</html>
