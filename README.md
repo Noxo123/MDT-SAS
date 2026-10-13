@@ -8,7 +8,6 @@ Ressource FiveM portable pour la tablette opérationnelle de la S.A.S. : dispatc
 - **Framework RP** : Standalone en natif ; ESX, QBCore et Qbox peuvent tourner à côté car la ressource ne dépend d'aucune API framework.
 - **Base de données** : MySQL/MariaDB via **oxmysql** recommandé. Sans oxmysql, le MDT démarre en mode mémoire, mais les données sont perdues au redémarrage.
 - **Suivi GPS** : OneSync doit être activé pour obtenir des coordonnées serveur fiables.
-- **Photos** : une ressource de capture et un stockage HTTPS approuvés doivent être configurés séparément. Le MDT n'invente pas de photo et met les passages en attente d'approbation.
 
 La compatibilité générale est visée ; il faut tester sur le FXServer, l'artifact et les ressources exactes de chaque serveur avant la production.
 
@@ -39,7 +38,7 @@ Les permissions sont contrôlées côté serveur. Les boutons de l'interface ne 
 - `/sentinel` ou touche F6 : ouvrir/fermer le MDT.
 - Prendre son service pour apparaître dans le suivi GPS.
 - Un dispatch ne peut être pris que par un agent en service ; son statut et sa position remontent au MDT.
-- Le superviseur peut valider ou refuser les passages après vérification de la preuve.
+- Le superviseur peut valider ou refuser un passage après vérification de la position et du contexte RP.
 - `/mdtcoords` (permission `mdt.sas.admin`) : relève les coordonnées du personnage et les écrit dans la console serveur. Utilise-les pour configurer les partenaires.
 - Les passages sont limités par un délai anti-double-clic configurable.
 
