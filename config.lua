@@ -16,7 +16,6 @@ Config.Ace = {
 Config.PositionUpdateSeconds = 10
 Config.MaxDispatchTitleLength = 90
 Config.MaxReportLength = 4000
-Config.MaxEvidenceLength = 500
 Config.DailyPassageTarget = 4
 Config.PassageValidationDistance = 100.0
 Config.PassageCooldownSeconds = 300
